@@ -152,14 +152,9 @@ const StrategyCard: React.FC<{ strategy: LayoutStrategy, modelConfig: ModelConfi
     );
 };
 
-// ... (Rest of component structure remains similar, focusing changes on the AI Logic)
-
 const InstanceRow: React.FC<any> = ({ 
     nodeId, index, state, sourceData, targetData, onAnalyze, onRefine, onModelChange, onToggleMute, isAnalyzing, compactMode, activeKnowledge 
 }) => {
-    // ... (UI Code same as previous, abbreviated for clarity)
-    // ...
-    // ...
     const [inputText, setInputText] = useState('');
     const chatContainerRef = useRef<HTMLDivElement>(null);
     const activeModelConfig = MODELS[state.selectedModel as ModelKey];
@@ -173,8 +168,25 @@ const InstanceRow: React.FC<any> = ({
             chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
         }
     }, [state.chatHistory.length, isAnalyzing]);
+
+    // VIEWPORT ISOLATION: Prevent React Flow Zoom/Pan when scrolling chat
+    useEffect(() => {
+        const container = chatContainerRef.current;
+        if (!container) return;
+
+        const handleWheel = (e: WheelEvent) => {
+            // Stop propagation to prevent the React Flow viewport from capturing the scroll
+            e.stopPropagation();
+        };
+
+        // Attach non-passive listener to ensuring blocking capability
+        container.addEventListener('wheel', handleWheel, { passive: false });
+
+        return () => {
+            container.removeEventListener('wheel', handleWheel);
+        };
+    }, []);
     
-    // ... (Handle Refine, Scroll Logic) ...
     const handleRefineClick = (e: React.MouseEvent) => {
         e.stopPropagation();
         if (!inputText.trim()) return;
@@ -244,7 +256,7 @@ const InstanceRow: React.FC<any> = ({
 
             {/* Content Area */}
             <div className={`p-3 space-y-3 ${compactMode ? 'text-[10px]' : ''}`}>
-                 {/* ... (Visual Wiring - Same as previous) ... */}
+                 {/* Visual Wiring */}
                  <div className="flex items-center justify-between bg-slate-900/40 rounded p-2 border border-slate-700/30 relative min-h-[60px] overflow-visible">
                     
                     {/* Left Inputs (Source + Target) */}
@@ -286,7 +298,11 @@ const InstanceRow: React.FC<any> = ({
                 </div>
 
                 {/* Chat Console */}
-                <div ref={chatContainerRef} className={`nodrag nopan ${compactMode ? 'h-48' : 'h-64'} overflow-y-auto border border-slate-700 bg-slate-900 rounded p-3 space-y-3 custom-scrollbar transition-all shadow-inner cursor-auto`} onMouseDown={(e) => e.stopPropagation()}>
+                <div 
+                    ref={chatContainerRef} 
+                    className={`nodrag nopan ${compactMode ? 'h-48' : 'h-64'} overflow-y-auto border border-slate-700 bg-slate-900 rounded p-3 space-y-3 custom-scrollbar transition-all shadow-inner cursor-auto`} 
+                    onMouseDown={(e) => e.stopPropagation()}
+                >
                     {state.chatHistory.length === 0 && (
                         <div className="h-full flex flex-col items-center justify-center text-slate-600 italic text-xs opacity-50"><span>Ready to analyze {targetData?.name || 'slot'}</span></div>
                     )}
